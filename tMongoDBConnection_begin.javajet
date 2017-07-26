@@ -1,0 +1,47 @@
+<%@ jet 
+	imports="
+		org.talend.core.model.process.INode 
+		org.talend.core.model.process.ElementParameterParser 
+		org.talend.core.model.metadata.IMetadataTable 
+		org.talend.core.model.metadata.IMetadataColumn 
+		org.talend.core.model.process.IConnection
+		org.talend.core.model.process.IConnectionCategory
+		org.talend.designer.codegen.config.CodeGeneratorArgument
+		org.talend.core.model.metadata.types.JavaTypesManager
+		org.talend.core.model.metadata.types.JavaType
+		java.util.List 
+                java.util.Map
+	" 
+%>
+<%
+    CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
+
+    INode node      = (INode)codeGenArgument.getArgument();
+    String cid      = node.getUniqueName();
+    String dbhost   = ElementParameterParser.getValue(node, "__HOST__");
+    String dbname   = ElementParameterParser.getValue(node, "__DATABASE__");
+    String dbuser   = ElementParameterParser.getValue(node, "__USERNAME__");
+    String dbpass   = ElementParameterParser.getValue(node, "__PASSWORD__");
+    boolean useSlaveOk = "true".equalsIgnoreCase(ElementParameterParser.getValue(node,"__SLAVEOK__"));
+    Integer dbport  = new Integer(ElementParameterParser.getValue(node, "__PORT__"));
+    int dbPortInt = Integer.valueOf(dbport);
+    String writeConcern = ElementParameterParser.getValue(node, "__WRITE_CONCERN__");
+    
+%>
+com.mongodb.MongoClientURI mongoClientURI = new com.mongodb.MongoClientURI("mongodb://"+<%=dbuser%>+":"+<%=dbpass%>+"@"+<%=dbhost%>+":"+"<%=dbport%>"+"/"+<%=dbname%>);
+com.mongodb.MongoClient mongoClient_<%=cid%> = new com.mongodb.MongoClient(mongoClientURI);
+/*
+String host = <%=dbhost%>;
+int port = <%=dbPortInt%>;
+
+com.mongodb.MongoClient mongoClient_<%=cid%> = new com.mongodb.MongoClient(host,port);
+*/
+<% if (useSlaveOk) { %>
+         mongoClient_<%=cid%>.setReadPreference(ReadPreference.secondaryPreferred());
+<% } %>
+
+com.mongodb.client.MongoDatabase db_<%=cid%> = mongoClient_<%=cid%>.getDatabase(<%=dbname%>);
+
+globalMap.put("mongoClient_<%=cid%>", mongoClient_<%=cid%>);
+globalMap.put("db_<%=cid%>", db_<%=cid%>);
+
